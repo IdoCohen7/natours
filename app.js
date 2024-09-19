@@ -1,39 +1,37 @@
-const express = require('express');
 const fs = require('fs');
-const app = express();
+const express = require('express');
+const morgan = require('morgan');
+const app = express(); // middleware
 const port = 3000;
-app.use(express.json());
 
-/*
-app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Hello from server!', app: 'Natours' });
-});
+app.use(morgan('dev'));
 
-app.post('/', (req, res) => {
-  res.send('You can post to this URL');
+app.use(express.json()); // middleware body parser
+
+app.use((req, res, next) => {
+  // a middleware of our choice, adds the request time
+  req.requestTime = new Date().toISOString();
+  next();
 });
-*/
 
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
 
-// GET route
-app.get('/api/v1/tours', (req, res) => {
+function getAllTours(req, res) {
   res.status(200).json({
     status: 'success',
+    requestedAt: req.requestTime,
     results: tours.length,
     data: {
       tours: tours,
     },
   });
-});
+}
 
-// GetTour route
-app.get('/api/v1/tours/:id', (req, res) => {
+function getTour(req, res) {
   const id = req.params.id * 1; // Multiply numeric string to turn it into a number
   const tour = tours.find((el) => el.id === id);
-  console.log(tour);
 
   // No tour found
   if (!tour) {
@@ -50,10 +48,9 @@ app.get('/api/v1/tours/:id', (req, res) => {
       tour,
     },
   });
-});
+}
 
-// POST route
-app.post('/api/v1/tours', (req, res) => {
+function postTour(req, res) {
   const newId = tours[tours.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
   tours.push(newTour);
@@ -70,12 +67,11 @@ app.post('/api/v1/tours', (req, res) => {
       });
     }
   );
-});
+}
 
-app.patch('/api/v1/tours/:id', (req, res) => {
+function patchTour(req, res) {
   const id = req.params.id * 1; // Multiply numeric string to turn it into a number
   const tour = tours.find((el) => el.id === id);
-  console.log(tour);
 
   // No tour found
   if (!tour) {
@@ -92,9 +88,9 @@ app.patch('/api/v1/tours/:id', (req, res) => {
       tour: 'Tour is updated!',
     },
   });
-});
+}
 
-app.delete('/api/v1/tours/:id', (req, res) => {
+function deleteTour(req, res) {
   const id = req.params.id * 1; // Multiply numeric string to turn it into a number
   const tour = tours.find((el) => el.id === id);
 
@@ -111,7 +107,11 @@ app.delete('/api/v1/tours/:id', (req, res) => {
     status: 'success',
     data: null,
   });
-});
+}
+
+// ROUTE HANDLERS
+app.route('/api/v1/tours').get(getAllTours).post(postTour);
+app.route('/api/v1/tours/:id').get(getTour).patch(patchTour).delete(deleteTour);
 
 // start server
 app.listen(port, () => {
