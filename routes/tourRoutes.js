@@ -4,14 +4,14 @@ const router = express.Router();
 const tourController = require('../controllers/tourController.js');
 
 // PARAM MIDDLEWARE
-router.param('id', tourController.checkID);
+// router.param('id', tourController.checkID);
 
 // CHECKBODY MIDDLEWARE FUNCTION
 
 router
   .route('/')
   .get(tourController.getAllTours)
-  .post(tourController.checkBody, tourController.postTour);
+  .post(tourController.createTour);
 router
   .route('/:id')
   .get(tourController.getTour)
