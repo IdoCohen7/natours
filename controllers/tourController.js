@@ -1,4 +1,5 @@
 const fs = require('fs');
+
 const tours = JSON.parse(fs.readFileSync(`./dev-data/data/tours-simple.json`));
 
 function checkID(req, res, next, val) {
@@ -9,6 +10,17 @@ function checkID(req, res, next, val) {
     return res.status(404).json({
       status: 'fail',
       message: 'invalid ID',
+    });
+  }
+  next();
+}
+
+function checkBody(req, res, next) {
+  if (!req.body.name || !req.body.price) {
+    // CHECKS IF PRICE OR NAME PROPERTIES ARE NULL
+    return res.status(400).json({
+      status: 'fail',
+      message: 'Missing name or price',
     });
   }
   next();
@@ -41,8 +53,10 @@ function postTour(req, res) {
   const newId = tours[tours.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
   tours.push(newTour);
+  console.log(newTour);
+
   fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
+    `./dev-data/data/tours-simple.json`,
     JSON.stringify(tours),
     (err) => {
       res.status(201).json({
@@ -52,7 +66,7 @@ function postTour(req, res) {
           tour: newTour,
         },
       });
-    }
+    },
   );
 }
 
@@ -85,4 +99,5 @@ module.exports = {
   patchTour,
   deleteTour,
   checkID,
+  checkBody,
 };

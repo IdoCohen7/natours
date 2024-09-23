@@ -6,7 +6,12 @@ const tourController = require('../controllers/tourController.js');
 // PARAM MIDDLEWARE
 router.param('id', tourController.checkID);
 
-router.route('/').get(tourController.getAllTours).post(tourController.postTour);
+// CHECKBODY MIDDLEWARE FUNCTION
+
+router
+  .route('/')
+  .get(tourController.getAllTours)
+  .post(tourController.checkBody, tourController.postTour);
 router
   .route('/:id')
   .get(tourController.getTour)
