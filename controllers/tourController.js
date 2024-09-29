@@ -1,5 +1,7 @@
 const Tour = require('./../models/tourModel');
 const APIFeatures = require('./../utils/apiFeatures');
+const AppError = require('./../utils/appError');
+const mongoose = require('mongoose');
 
 exports.aliasTopTours = function (req, res, next) {
   req.query.limit = '5';
@@ -8,7 +10,7 @@ exports.aliasTopTours = function (req, res, next) {
   next();
 };
 
-exports.getAllTours = async function (req, res) {
+exports.getAllTours = async function (req, res, next) {
   try {
     const features = new APIFeatures(Tour.find(), req.query)
       .filter()
@@ -30,16 +32,18 @@ exports.getAllTours = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
 
-exports.getTour = async function (req, res) {
+exports.getTour = async function (req, res, next) {
   try {
     const tour = await Tour.findById(req.params.id);
+
+    if (!tour) {
+      return next(new AppError('no tour found with this ID', 404));
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -47,14 +51,11 @@ exports.getTour = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
 
-exports.createTour = async function (req, res) {
+exports.createTour = async function (req, res, next) {
   try {
     const newTour = await Tour.create(req.body);
     res.status(201).json({
@@ -64,19 +65,24 @@ exports.createTour = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
 
-exports.patchTour = async function (req, res) {
+exports.patchTour = async function (req, res, next) {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return next(new AppError('No tour with that ID can be found', 404)); // INVALID ID FORMAT, RETURNS 404 FOR SIMPLICITY
+    }
     const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
+
+    if (!tour) {
+      return next(new AppError('no tour found with this ID', 404));
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -84,29 +90,31 @@ exports.patchTour = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
 
-exports.deleteTour = async function (req, res) {
+exports.deleteTour = async function (req, res, next) {
   try {
-    await Tour.findByIdAndDelete(req.params.id);
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return next(new AppError('No tour with that ID can be found', 404)); // INVALID ID FORMAT, RETURNS 404 FOR SIMPLICITY
+    }
+
+    const tour = await Tour.findByIdAndDelete(req.params.id);
+
+    if (!tour) {
+      return next(new AppError('no tour found with this ID', 404));
+    }
     res.status(204).json({
       status: 'success',
       data: null,
     });
   } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
 
-exports.getTourStats = async function (req, res) {
+exports.getTourStats = async function (req, res, next) {
   try {
     const stats = await Tour.aggregate([
       {
@@ -134,14 +142,15 @@ exports.getTourStats = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
+    // res.status(400).json({
+    //   status: 'fail',
+    //   message: err.message,
+    // });
   }
 };
 
-exports.getMonthlyPlan = async function (req, res) {
+exports.getMonthlyPlan = async function (req, res, next) {
   try {
     const year = req.params.year * 1;
     const plan = await Tour.aggregate([
@@ -185,9 +194,6 @@ exports.getMonthlyPlan = async function (req, res) {
       },
     });
   } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+    return next(err);
   }
 };
