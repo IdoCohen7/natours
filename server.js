@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 process.on('uncaughtException', (err) => {
   console.log('UNCAUGHT EXCEPTION! SHUTTING DOWN...');
-  console.log(`${err.name}: ${err.message}`);
+  console.log(`${err.name}: ${err.message}\n ${err.stack}`);
   process.exit(1);
 });
 
@@ -34,7 +34,7 @@ const server = app.listen(port, () => {
 
 function handleUnhandledRejections(err) {
   console.error('UNHANDLED REJECTION! Shutting down...');
-  console.error(err.name, err.message);
+  console.error(err.name, err.message, err.stack);
 
   server.close(() => {
     process.exit(1);

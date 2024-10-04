@@ -3,7 +3,7 @@ const morgan = require('morgan');
 
 const app = express(); // MIDDLEWARE
 
-const appError = require('./utils/appError');
+const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -31,7 +31,7 @@ app.all('*', (req, res, next) => {
   // err.status = 'fail';
   // err.statusCode = 404;
 
-  next(new appError(`Cant find ${req.originalUrl} on this server!`, 404)); // EVERY ARG THAT IS PASSED INTO NEXT() IS AUTOMATICALLY ASSUMED TO BE AN ERROR
+  next(new AppError(`Cant find ${req.originalUrl} on this server!`, 404)); // EVERY ARG THAT IS PASSED INTO NEXT() IS AUTOMATICALLY ASSUMED TO BE AN ERROR
 });
 
 app.use(globalErrorHandler);
