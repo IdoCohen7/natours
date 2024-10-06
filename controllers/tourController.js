@@ -19,7 +19,6 @@ exports.getAllTours = async function (req, res, next) {
       .paginate();
 
     const tours = await features.query;
-
     if (tours.length === 0) {
       throw new Error('no data');
     }
@@ -38,7 +37,7 @@ exports.getAllTours = async function (req, res, next) {
 
 exports.getTour = async function (req, res, next) {
   try {
-    const tour = await Tour.findById(req.params.id);
+    const tour = await Tour.findById(req.params.id).populate('reviews');
 
     if (!tour) {
       return next(new AppError('no tour found with this ID', 404));

@@ -11,6 +11,7 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 // GLOBAL MIDDLEWARE - SECURITY HTTP HEADERS
 app.use(helmet());
@@ -68,6 +69,7 @@ app.use((req, res, next) => {
 // ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 // MUST APPEAR IN THE BOTTOM OF OUR APP FILE - FOR ALL UNHANDLED ROUTES
 app.all('*', (req, res, next) => {
