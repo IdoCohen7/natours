@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
-
+const Tour = require('./tourModel');
 const reviewSchema = new mongoose.Schema(
   {
-    text: {
+    review: {
       type: String,
       required: [true, 'Review text cannot be empty!'],
     },
@@ -32,6 +32,45 @@ const reviewSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   },
 );
+
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
+
+reviewSchema.statics.calcAverageRatings = async function (tourId) {
+  const stats = await this.aggregate([
+    {
+      $match: { tour: tourId },
+    },
+    {
+      $group: {
+        _id: '$tour',
+        nRating: { $sum: 1 },
+        avgRating: { $avg: '$rating' },
+      },
+    },
+  ]);
+
+  if (stats.length > 0) {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingCount: stats[0].nRating,
+      ratingAvg: stats[0].avgRating,
+    });
+  } else {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingCount: 0,
+      ratingAvg: 4.5,
+    });
+  }
+};
+
+reviewSchema.post('save', function () {
+  // THIS POINTS TO CURRENT REVIEW
+  this.constructor.calcAverageRatings(this.tour);
+});
+
+reviewSchema.post(/^findOneAnd/, async function (docs) {
+  // CALLS FUNC WHEN REVIEW IS UPDATED OR DELETED
+  await docs.constructor.calcAverageRatings(docs.tour);
+});
 
 reviewSchema.pre(/^find/, function (next) {
   this.populate({

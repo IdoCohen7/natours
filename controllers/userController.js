@@ -1,7 +1,6 @@
 const User = require('./../models/userModel');
-const APIFeatures = require('./../utils/apiFeatures');
 const AppError = require('./../utils/appError');
-const mongoose = require('mongoose');
+const factory = require('./handlerFactory');
 
 function filterObj(obj, ...allowedFields) {
   const filteredBody = {};
@@ -51,45 +50,24 @@ exports.deleteMe = async function (req, res, next) {
   }
 };
 
-exports.getAllUsers = async function (req, res, next) {
-  try {
-    const users = await User.find();
-    res.status(200).json({
-      status: 'success',
-      results: users.length,
-      data: {
-        users,
-      },
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
+exports.getAllUsers = factory.getAll(User);
 
 exports.createUser = async function (req, res, next) {
   res.status(500).json({
     status: 'error',
-    message: 'this route is not yet defined',
+    message: 'this route is not yet defined, please use /signup instead.',
   });
 };
 
-exports.getUser = async function (req, res, next) {
-  res.status(500).json({
-    status: 'error',
-    message: 'this route is not yet defined',
+exports.getMe = function (req, res, next) {
+  res.status(200).json({
+    status: 'success',
+    data: { user: req.user },
   });
 };
 
-exports.patchUser = async function (req, res, next) {
-  res.status(500).json({
-    status: 'error',
-    message: 'this route is not yet defined',
-  });
-};
+exports.getUser = factory.getOne(User);
 
-exports.deleteUser = async function (req, res, next) {
-  res.status(500).json({
-    status: 'error',
-    message: 'this route is not yet defined',
-  });
-};
+exports.patchUser = factory.updateOne(User);
+
+exports.deleteUser = factory.deleteOne(User);

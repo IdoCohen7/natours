@@ -11,11 +11,15 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 router.patch('/updateMe', authController.protect, userController.updateMe);
 router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
-router.patch(
-  '/updateMyPassword',
-  authController.protect,
-  authController.updatePassword,
-);
+router.use(authController.protect);
+// SINCE THIS RUNS IN SEQUENCE, ALL ROUTES BELOW THIS MIDDLEWARE WILL BE PROTECTED
+
+router.get('/me', userController.getMe);
+
+router.patch('/updateMyPassword', authController.updatePassword);
+
+router.use(authController.restrictTo('admin'));
+// ALL ROUTES BELOW THIS MIDDLEWARE ARE AVAILABLE FOR ADMIN USERS ONLY
 
 router
   .route('/')

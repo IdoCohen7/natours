@@ -1,3 +1,5 @@
+const AppError = require('./appError');
+
 class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
@@ -33,6 +35,11 @@ class APIFeatures {
   limitFields() {
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(',').join(' ');
+
+      // PREVENT LEAK OF USER'S PASSWORDS
+      if (fields.includes('password'))
+        throw new AppError('Invalid field selected', 400);
+
       this.query = this.query.select(fields);
     } else {
       this.query = this.query.select('-__v'); // EXCLUDING MONGODB'S INTERNAL FIELD

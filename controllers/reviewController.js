@@ -1,31 +1,18 @@
 const Review = require('./../models/reviewModel');
-const AppError = require('./../utils/appError');
-const mongoose = require('mongoose');
+const factory = require('./handlerFactory');
 
-exports.createReview = async function (req, res, next) {
-  try {
-    const newReview = await Review.create(req.body);
-    res.status(201).json({
-      status: 'success',
-      data: {
-        newReview,
-      },
-    });
-  } catch (err) {
-    return next(err);
-  }
+exports.setTourUserIds = function (req, res, next) {
+  if (!req.body.tour) req.body.tour = req.params.tourId;
+  req.body.user = req.user.id;
+  next();
 };
 
-exports.getAllReviews = async function (req, res, next) {
-  try {
-    const reviews = await Review.find();
-    res.status(200).json({
-      status: 'success',
-      data: {
-        reviews,
-      },
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
+exports.createReview = factory.createOne(Review);
+
+exports.getAllReviews = factory.getAll(Review);
+
+exports.patchReview = factory.updateOne(Review);
+
+exports.deleteReview = factory.deleteOne(Review);
+
+exports.getReview = factory.getOne(Review);
