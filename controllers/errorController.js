@@ -5,7 +5,7 @@ module.exports = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500; // IF STATUS CODE IS NULL, LET IT BE 500 INTERNAL SERVER ERROR
   err.status = err.status || 'error';
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, res);
+    sendErrorDev(req, res, err);
   } else if (process.env.NODE_ENV === 'production') {
     let error = { ...err };
     if (err.name === 'CastError') {
@@ -23,7 +23,7 @@ module.exports = (err, req, res, next) => {
     if (err.name === 'TokenExpiredError') {
       error = handleJWTExpiredTokenError();
     }
-    sendErrorProd(error, res);
+    sendErrorProd(req, res, error);
   }
 };
 
@@ -51,28 +51,59 @@ function handleDuplicateFieldsDB(err) {
   return new AppError(message, 400);
 }
 
-function sendErrorDev(err, res) {
-  res.status(err.statusCode).json({
-    status: err.status,
-    error: err,
-    message: err.message,
-    stack: err.stack,
-  });
-}
-
-function sendErrorProd(err, res) {
-  if (err instanceof AppError) {
-    // OPERATIONAL, TRUSTED ERROR => SEND MESSAGE TO THE CLIENT
+function sendErrorDev(req, res, err) {
+  // A : API
+  if (req.originalUrl.startsWith('/api')) {
     res.status(err.statusCode).json({
       status: err.status,
+      error: err,
       message: err.message,
+      stack: err.stack,
     });
+    // B : RENDERED WEBSITE
   } else {
     console.error('ERROR: ', err);
-    // PROGRAMMING ERROR OR SOME OTHER UNKNOWN KIND OF ERROR => DON'T LEAK ERROR DETAILS!
-    res.status(500).json({
-      status: 'error',
-      message: 'something went wrong!',
+    res.status(err.statusCode).render('error', {
+      title: 'Something went wrong!',
+      msg: err.message,
     });
   }
+}
+
+function sendErrorProd(req, res, err) {
+  // A : API
+  if (req.originalUrl.startsWith('/api')) {
+    // OPERATIONAL, TRUSTED ERROR => SEND MESSAGE TO THE CLIENT
+    if (err instanceof AppError) {
+      return res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message,
+      });
+    }
+    // PROGRAMMING ERROR OR SOME OTHER UNKNOWN KIND OF ERROR => DON'T LEAK ERROR DETAILS!
+    // 1 : LOG ERROR
+    console.error('ERROR: ', err);
+    // 2 : SEND GENERIC MESSAGE
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went very wrong!',
+    });
+  }
+  // B : RENDERED WEBSITE
+  // OPERATIONAL, TRUSTED ERROR => SEND MESSAGE TO THE CLIENT
+  if (err instanceof AppError) {
+    console.error('ERROR: ', err);
+    return res.status(err.statusCode).render('error', {
+      title: 'Something went wrong!',
+      msg: err.message,
+    });
+  }
+  // PROGRAMMING ERROR OR SOME OTHER UNKNOWN KIND OF ERROR => DON'T LEAK ERROR DETAILS!
+  // 1 : LOG ERROR
+  console.error('ERROR: ', err);
+  // 2 : SEND GENERIC MESSAGE
+  return res.status(err.statusCode).render('error', {
+    title: 'Something went wrong!',
+    msg: 'Please try again later.',
+  });
 }

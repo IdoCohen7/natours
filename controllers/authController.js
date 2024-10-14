@@ -23,7 +23,7 @@ function createSendToken(user, statusCode, res) {
   };
 
   // IF WE ARE IN PRODUCTION, LET THE COOKIE BE CREATED. OTHERWISE, WE CAN'T TEST IT IN HTTPS THEREFORE IT IS NOT SECURE AND COOKIE WON'T BE CREATED
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = false;
 
   user.password = undefined; // EXCLUDE PASSWORD FROM RESPONSE TO CLIENT
 
@@ -79,6 +79,45 @@ exports.login = async function (req, res, next) {
   }
 };
 
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+  res.status(200).json({ status: 'success' });
+};
+
+// ONLY FOR RENDERED PAGES, NO ERRORS
+exports.isLoggedIn = async (req, res, next) => {
+  if (req.cookies.jwt) {
+    try {
+      // 1) verify token
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET,
+      );
+
+      // 2) Check if user still exists
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) {
+        return next();
+      }
+
+      // 3) Check if user changed password after the token was issued
+      if (currentUser.changedPasswordAfter(decoded.iat)) {
+        return next();
+      }
+
+      // THERE IS A LOGGED IN USER
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
+      return next();
+    }
+  }
+  next();
+};
+
 exports.protect = async function (req, res, next) {
   try {
     // A : GET TOKEN, CHECK EXISTENCE
@@ -88,6 +127,8 @@ exports.protect = async function (req, res, next) {
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt && req.cookies.jwt !== 'loggedout') {
+      token = req.cookies.jwt;
     }
     if (!token) {
       return next(new AppError('You must be logged in to get access', 401));
@@ -110,9 +151,9 @@ exports.protect = async function (req, res, next) {
         ),
       );
     }
-
     // GRANT ACCESS TO PROTECTED ROUTE
     req.user = freshUser;
+    res.locals.user = freshUser;
     next();
   } catch (err) {
     return next(err);
@@ -211,11 +252,12 @@ exports.resetPassword = async function (req, res, next) {
 exports.updatePassword = async function (req, res, next) {
   try {
     // A : GET USER FROM COLLECTION
-    let user = await User.findById(req.user.id).select('+password');
+    let user = await User.findById(req.user._id).select('+password');
     // B : CHECK PASSWORD CORRECTNESS
     if (!(await user.correctPassword(req.body.oldPassword, user.password))) {
       return next(new AppError('Your password is wrong.', 401));
     }
+
     // C : IF CORRECT, UPDATE PASSWORD
     user.password = req.body.password;
     user.passwordConfirm = req.body.passwordConfirm;

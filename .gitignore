@@ -1,3 +1,6 @@
 node_modules/
 config.env
 dev-data/data
+public/js/bundle.js
+public/js/bundle.js.map
+.cache
