@@ -1,5 +1,6 @@
 const Tour = require('./../models/tourModel');
 const AppError = require('./../utils/appError');
+const Booking = require('./../models/bookingModel');
 
 exports.getOverview = async function (req, res) {
   try {
@@ -16,7 +17,6 @@ exports.getOverview = async function (req, res) {
 
 exports.getTour = async function (req, res, next) {
   try {
-    // 1) Get the data, for the requested tour (including reviews and guides)
     const tour = await Tour.findOne({ slug: req.params.slug }).populate({
       path: 'reviews',
       fields: 'review rating user',
@@ -26,8 +26,6 @@ exports.getTour = async function (req, res, next) {
       return next(new AppError('There is no tour with that name.', 404));
     }
 
-    // 2) Build template
-    // 3) Render template using data from 1)
     res.status(200).render('tour', {
       title: `${tour.name} Tour`,
       tour,
@@ -43,8 +41,32 @@ exports.getLoginForm = function (req, res) {
   });
 };
 
+exports.getsignUpForm = function (req, res) {
+  res.status(200).render('signup', {
+    title: 'Sign up to Natours',
+  });
+};
+
 exports.getAccount = function (req, res) {
   res.status(200).render('account', {
     title: 'Your account',
   });
+};
+
+exports.getMyTours = async function (req, res, next) {
+  try {
+    // A : FIND ALL USER'S BOOKINGS
+    const bookings = await Booking.find({ user: req.user.id });
+
+    // B : FIND ALL TOURS THAT MATCH THE BOOKINGS
+    const tourIDs = bookings.map((el) => el.tour);
+    const tours = await Tour.find({ _id: { $in: tourIDs } });
+
+    res.status(200).render('overview', {
+      title: 'My Tours',
+      tours,
+    });
+  } catch (err) {
+    return next(err);
+  }
 };

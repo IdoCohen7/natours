@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const { xss } = require('express-xss-sanitizer');
 const hpp = require('hpp');
-
 const cookieParser = require('cookie-parser');
 
 const app = express(); // MIDDLEWARE
@@ -15,8 +14,11 @@ const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 const { cookie } = require('express/lib/response');
+const compression = require('compression');
+
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -96,6 +98,8 @@ app.use(
   }),
 );
 
+app.use(compression());
+
 // GLOBAL MIDDLEWARE - ADD TIMESTAMP FOR EACH REQUEST
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
@@ -106,6 +110,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 // MUST APPEAR IN THE BOTTOM OF OUR APP FILE - FOR ALL UNHANDLED ROUTES
 app.all('*', (req, res, next) => {
