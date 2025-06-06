@@ -38,4 +38,4 @@
 
 1. שיבוט הריפו:
    ```bash
-   git clone https://github.com/username/natours.git
+   git clone https://github.com/IdoCohen7/natours.git
